@@ -1,0 +1,31 @@
+
+NAME = cameraTraps
+
+CC = gcc
+RM = rm
+
+CFLAGS += -Wall
+CFLAGS += -Werror
+
+LDFLAGS += $(CFLAGS)
+
+SRC += config.c
+SRC += cameraTraps.c
+
+OBJS = $(patsubst %.c, %.o, $(SRC))
+
+.PHONY: clean
+
+all: binary
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+binary: $(OBJS)
+	$(CC) $(LDFLAGS) $(OBJS) -o $(NAME)
+
+clean:
+	$(RM) -f $(NAME)
+	$(RM) -f $(OBJS)
+
+
