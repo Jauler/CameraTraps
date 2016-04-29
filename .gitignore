@@ -1,2 +1,3 @@
 *.swp
 a.out
+.ycm_extra_conf.pyc
