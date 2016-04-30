@@ -10,6 +10,7 @@ CFLAGS += -Werror
 LDFLAGS += $(CFLAGS)
 
 SRC += config.c
+SRC += v4l2_camera.c
 SRC += cameraTraps.c
 
 OBJS = $(patsubst %.c, %.o, $(SRC))
