@@ -83,6 +83,10 @@ struct sensor_t *SNR_open(struct config_t *cfg)
 	}
 
 	snr->fd = open(snr->value_file, O_RDONLY);
+	if (snr->fd < 0){
+		WARN(errno, "Error gpio open failed");
+		goto ERR;
+	}
 	return snr;
 
 ERR:
