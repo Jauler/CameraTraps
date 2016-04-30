@@ -59,7 +59,7 @@ int main(int argc, char *argv[])
 	char filename[256];
 	char date[64];
 	struct camera_buffer_t buff;
-	struct timespec ts = {0, 10000};
+	struct timespec ts = {0, 100000000};
 	int isActive = 0, old_isActive = 0;
 	int counter = 0;
 
