@@ -12,6 +12,7 @@ LDFLAGS += $(CFLAGS)
 SRC += config.c
 SRC += v4l2_camera.c
 SRC += cameraTraps.c
+SRC += sensor.c
 
 OBJS = $(patsubst %.c, %.o, $(SRC))
 
