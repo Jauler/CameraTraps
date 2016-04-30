@@ -98,7 +98,7 @@ struct camera_t *CAM_open(struct config_t *cfg)
 
 	char *filename = CFG_GetValue(cfg, "video_device");
 	if (!filename){
-		WARN(ENOENT, "Config Error: video_device");
+		ERR_NOCFG("video_device");
 		goto ERR;
 	}
 
