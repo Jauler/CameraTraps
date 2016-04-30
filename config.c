@@ -66,7 +66,6 @@ struct config_t *CFG_ParseConfigFile(char *filename)
 	if (!f)
 		ERR(-1, errno, "Error reading config file");
 
-
 	char *line = NULL;
 	char *key = NULL;
 	char *value = NULL;
@@ -102,14 +101,14 @@ struct config_t *CFG_ParseConfigFile(char *filename)
 		if (*key == '\0')
 			goto ERR_CONTINUE;
 
-		//store key-value
+		//allocate key-value instance
 		struct config_t *cfg = NULL;
 		last_cfg->next = malloc(sizeof(struct config_t));
 		cfg = last_cfg->next;
-
 		if (!cfg)
 			ERR(-1, ENOMEM, "Error while parsing config file: %s\n", strerror(ENOMEM));
 
+		//strore key-value
 		cfg->line = line;
 		cfg->key = key;
 		cfg->value = value;
@@ -119,6 +118,7 @@ struct config_t *CFG_ParseConfigFile(char *filename)
 
 ERR_CONTINUE:
 		free(line);
+
 SUCC_CONTINUE:
 		line = NULL;
 		len = 0;
@@ -157,16 +157,6 @@ void CFG_destroy(struct config_t *cfg)
 		free(cfg);
 		cfg = tmp;
 	}
-
-	return;
-}
-
-void CFG_printConfig(struct config_t *cfg)
-{
-	struct config_t *tmp;
-
-	for (tmp = cfg; tmp != NULL; tmp = tmp->next)
-		printf("\"%s\"=\"%s\"\n", tmp->key, tmp->value);
 
 	return;
 }

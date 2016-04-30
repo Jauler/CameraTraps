@@ -10,6 +10,4 @@ char * CFG_GetValue(struct config_t *cfg, char * key);
 
 void CFG_destroy(struct config_t *cfg);
 
-void CFG_printConfig(struct config_t *cfg);
-
 #endif
