@@ -97,6 +97,7 @@ ERR:
 int SNR_IsActive(struct sensor_t *snr)
 {
 	char status = 0;
+	lseek(snr->fd, 0, SEEK_SET);
 	read(snr->fd, &status, 1);
 	return  (status == '1') ^ snr->reverse;
 }
