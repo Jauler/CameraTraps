@@ -57,7 +57,8 @@ struct sensor_t *SNR_open(struct config_t *cfg)
 			goto ERR;
 		}
 
-		if (write(export_fd, snr->str_gpio_num, strlen(snr->str_gpio_num)) <= 0){
+		int ret = write(export_fd, snr->str_gpio_num, strlen(snr->str_gpio_num));
+		if (ret <= 0 && errno != EBUSY){
 			WARN(errno, "Error exporting");
 			goto ERR;
 		}
