@@ -63,8 +63,10 @@ struct config_t *CFG_ParseConfigFile(char *filename)
 	struct config_t *last_cfg = &head_cfg;
 
 	f = fopen(filename, "r");
-	if (!f)
-		ERR(-1, errno, "Error reading config file");
+	if (!f){
+		WARN(errno, "Error reading config file");
+		return NULL;
+	}
 
 	char *line = NULL;
 	char *key = NULL;
@@ -105,8 +107,11 @@ struct config_t *CFG_ParseConfigFile(char *filename)
 		struct config_t *cfg = NULL;
 		last_cfg->next = malloc(sizeof(struct config_t));
 		cfg = last_cfg->next;
-		if (!cfg)
-			ERR(-1, ENOMEM, "Error while parsing config file: %s\n", strerror(ENOMEM));
+		if (!cfg){
+			WARN(ENOMEM, "Error while parsing config file: %s\n", strerror(ENOMEM));
+			CFG_destroy(head_cfg.next);
+			return NULL;
+		}
 
 		//strore key-value
 		cfg->line = line;
