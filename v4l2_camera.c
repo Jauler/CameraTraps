@@ -13,6 +13,12 @@
 #include "errors.h"
 #include "v4l2_camera.h"
 
+struct framesize_t
+{
+	unsigned int width;
+	unsigned int height;
+};
+
 struct camera_t
 {
 	int fd;
@@ -48,6 +54,44 @@ static int CAM_IsFourCCSupported(struct camera_t * cam, uint32_t fourcc)
 	return 0;
 }
 
+static struct framesize_t CAM_GetHighesSupportedResolution(struct camera_t *cam)
+{
+	struct framesize_t max_framesize = {0,0};
+	struct v4l2_frmsizeenum framesize;
+	framesize.index = 0;
+	framesize.pixel_format = v4l2_fourcc('J', 'P', 'E', 'G');
+
+	if (safe_ioctl(cam->fd, VIDIOC_ENUM_FRAMESIZES, &framesize) == -1){
+		WARN(errno, "Error: Could not enumerate supported resolutions");
+		return max_framesize;
+	}
+
+	switch(framesize.type){
+
+	case V4L2_FRMSIZE_TYPE_DISCRETE:
+		do {
+			if (framesize.discrete.width * framesize.discrete.height >
+						max_framesize.width * max_framesize.height)
+			{
+				max_framesize.width = framesize.discrete.width;
+				max_framesize.height = framesize.discrete.height;
+			}
+
+			framesize.index++;
+		} while (safe_ioctl(cam->fd, VIDIOC_ENUM_FRAMESIZES, &framesize) == 0);
+		break;
+
+	case V4L2_FRMSIZE_TYPE_CONTINUOUS:
+	case V4L2_FRMSIZE_TYPE_STEPWISE:
+		max_framesize.width  = framesize.stepwise.max_width;
+		max_framesize.height = framesize.stepwise.max_height;
+		break;
+	}
+
+	return max_framesize;
+}
+
+
 struct camera_t *CAM_open(char *filename)
 {
 	struct camera_t *cam = calloc(1, sizeof(struct camera_t));
@@ -81,11 +125,17 @@ struct camera_t *CAM_open(char *filename)
 		goto ERR;
 	}
 
+	struct framesize_t framesize = CAM_GetHighesSupportedResolution(cam);
+	if (framesize.height * framesize.width <= 0){
+		WARN(EINVAL, "Error: Pixel resolution search failed");
+		goto ERR;
+	}
+
 	struct v4l2_format format;
 	format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 	format.fmt.pix.pixelformat = V4L2_PIX_FMT_MJPEG;
-	format.fmt.pix.width = 640;
-	format.fmt.pix.height = 480;
+	format.fmt.pix.width = framesize.width;
+	format.fmt.pix.height = framesize.height;
 	if (safe_ioctl(cam->fd, VIDIOC_S_FMT, &format) == -1){
 		WARN(EINVAL, "Error: Format set failed");
 		return NULL;
