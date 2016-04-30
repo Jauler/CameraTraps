@@ -13,6 +13,8 @@
 #include "errors.h"
 #include "v4l2_camera.h"
 
+#define BUFFER_COUNT		2
+
 struct framesize_t
 {
 	unsigned int width;
@@ -23,8 +25,9 @@ struct camera_t
 {
 	int fd;
 	struct v4l2_capability caps;
-	struct v4l2_buffer buff;
-	void *mmap;
+	struct v4l2_buffer buff[BUFFER_COUNT];
+	void *mmap[BUFFER_COUNT];
+	int current_buff_idx;
 };
 
 static int safe_ioctl(int fd, int request, void *arg)
@@ -94,6 +97,7 @@ static struct framesize_t CAM_GetHighesSupportedResolution(struct camera_t *cam)
 
 struct camera_t *CAM_open(struct config_t *cfg)
 {
+	int i;
 	struct camera_t *cam = NULL;
 
 	char *filename = CFG_GetValue(cfg, "video_device");
@@ -154,27 +158,28 @@ struct camera_t *CAM_open(struct config_t *cfg)
 	struct v4l2_requestbuffers bufreq;
 	bufreq.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 	bufreq.memory = V4L2_MEMORY_MMAP;
-	bufreq.count = 1;
+	bufreq.count = BUFFER_COUNT;
 	if (safe_ioctl(cam->fd, VIDIOC_REQBUFS, &bufreq) == -1){
 		WARN(EINVAL, "Error: Buffer request failed");
 		return NULL;
 	}
 
-	memset(&cam->buff, 0, sizeof(cam->buff));
-	cam->buff.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-	cam->buff.memory = V4L2_MEMORY_MMAP;
-	cam->buff.index = 0;
-	if (safe_ioctl(cam->fd, VIDIOC_QUERYBUF, &cam->buff) == -1){
-		WARN(EINVAL, "Error: Buffer query failed");
-		return NULL;
-	}
+	for (i = 0; i < BUFFER_COUNT; i++){
+		memset(&cam->buff[i], 0, sizeof(cam->buff[i]));
+		cam->buff[i].type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+		cam->buff[i].memory = V4L2_MEMORY_MMAP;
+		cam->buff[i].index = i;
+		if (safe_ioctl(cam->fd, VIDIOC_QUERYBUF, &cam->buff[i]) == -1){
+			WARN(EINVAL, "Error: Buffer query failed");
+			return NULL;
+		}
 
-	cam->mmap = mmap(NULL, cam->buff.length, PROT_READ | PROT_WRITE, MAP_SHARED, cam->fd, cam->buff.m.offset);
-	if (cam->mmap == MAP_FAILED){
-		WARN(EINVAL, "Error: memory mapping failed");
-		return NULL;
+		cam->mmap[i] = mmap(NULL, cam->buff[i].length, PROT_READ | PROT_WRITE, MAP_SHARED, cam->fd, cam->buff[i].m.offset);
+		if (cam->mmap[i] == MAP_FAILED){
+			WARN(EINVAL, "Error: memory mapping failed");
+			return NULL;
+		}
 	}
-	memset(cam->mmap, 0, cam->buff.length);
 
 	return cam;
 
@@ -185,7 +190,9 @@ ERR:
 
 void CAM_prepare(struct camera_t *cam)
 {
-	if (safe_ioctl(cam->fd, VIDIOC_QBUF, &cam->buff) == -1){
+	//spin single frame - some cameras require queued buffers before STREAMON
+	memset(cam->mmap[cam->current_buff_idx], 0, cam->buff[cam->current_buff_idx].length);
+	if (safe_ioctl(cam->fd, VIDIOC_QBUF, &cam->buff[cam->current_buff_idx]) == -1){
 		WARN(EINVAL, "Error: Buffer queue failed");
 		return;
 	}
@@ -196,6 +203,13 @@ void CAM_prepare(struct camera_t *cam)
 		return;
 	}
 
+	if (safe_ioctl(cam->fd, VIDIOC_DQBUF, &cam->buff[cam->current_buff_idx]) == -1){
+		WARN(EINVAL, "Error: Buffer dequeue failed");
+		return;
+	}
+
+	cam->current_buff_idx = (cam->current_buff_idx + 1) % BUFFER_COUNT;
+
 	return;
 }
 
@@ -203,19 +217,20 @@ struct camera_buffer_t CAM_capture(struct camera_t *cam)
 {
 	struct camera_buffer_t buff = {NULL, 0};
 
-	if (safe_ioctl(cam->fd, VIDIOC_DQBUF, &cam->buff) == -1){
+	cam->current_buff_idx = (cam->current_buff_idx + 1) % BUFFER_COUNT;
+	memset(cam->mmap[cam->current_buff_idx], 0, cam->buff[cam->current_buff_idx].length);
+	if (safe_ioctl(cam->fd, VIDIOC_QBUF, &cam->buff[cam->current_buff_idx]) == -1){
 		WARN(EINVAL, "Error: Buffer dequeue failed");
 		return buff;
 	}
 
-	if (safe_ioctl(cam->fd, VIDIOC_QBUF, &cam->buff) == -1){
+	if (safe_ioctl(cam->fd, VIDIOC_DQBUF, &cam->buff[cam->current_buff_idx]) == -1){
 		WARN(EINVAL, "Error: Buffer queue failed");
 		return buff;
 	}
 
-	buff.buffer = cam->mmap;
-	buff.length = cam->buff.length;
-
+	buff.buffer = cam->mmap[cam->current_buff_idx];
+	buff.length = cam->buff[cam->current_buff_idx].length;
 	return buff;
 }
 
@@ -230,8 +245,10 @@ void CAM_unprepare(struct camera_t *cam)
 
 void CAM_destroy(struct camera_t *cam)
 {
-	if (cam->mmap)
-		munmap(cam->mmap, cam->buff.length);
+	int i;
+	for (i = 0; i < BUFFER_COUNT; i++)
+		if (cam->mmap[i])
+			munmap(cam->mmap[i], cam->buff[i].length);
 	close(cam->fd);
 	free(cam);
 	return;
