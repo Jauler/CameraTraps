@@ -118,20 +118,24 @@ void CAM_prepare(struct camera_t *cam)
 	return;
 }
 
-void *CAM_capture(struct camera_t *cam)
+struct camera_buffer_t CAM_capture(struct camera_t *cam)
 {
+	struct camera_buffer_t buff = {NULL, 0};
 
 	if (safe_ioctl(cam->fd, VIDIOC_DQBUF, &cam->buff) == -1){
 		WARN(EINVAL, "Error: Buffer dequeue failed");
-		return NULL;
+		return buff;
 	}
 
 	if (safe_ioctl(cam->fd, VIDIOC_QBUF, &cam->buff) == -1){
 		WARN(EINVAL, "Error: Buffer queue failed");
-		return NULL;
+		return buff;
 	}
 
-	return cam->mmap;
+	buff.buffer = cam->mmap;
+	buff.length = cam->buff.length;
+
+	return buff;
 }
 
 void CAM_unprepare(struct camera_t *cam)
@@ -141,11 +145,6 @@ void CAM_unprepare(struct camera_t *cam)
 		WARN(EINVAL, "Error: Stream stop failed");
 		return;
 	}
-}
-
-int CAM_GetBufferSize(struct camera_t *cam, int index)
-{
-	return cam->buff.length;
 }
 
 void CAM_destroy(struct camera_t *cam)
