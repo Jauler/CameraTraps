@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <string.h>
 #include <errno.h>
 #include <sys/types.h>
@@ -31,6 +32,22 @@ static int safe_ioctl(int fd, int request, void *arg)
 	return ret;
 }
 
+static int CAM_IsFourCCSupported(struct camera_t * cam, uint32_t fourcc)
+{
+	struct v4l2_fmtdesc fmtdesc;
+
+	fmtdesc.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	fmtdesc.index = 0;
+	while (safe_ioctl(cam->fd, VIDIOC_ENUM_FMT, &fmtdesc) == 0){
+		if (fmtdesc.pixelformat == fourcc)
+			return 1;
+
+		fmtdesc.index++;
+	}
+
+	return 0;
+}
+
 struct camera_t *CAM_open(char *filename)
 {
 	struct camera_t *cam = calloc(1, sizeof(struct camera_t));
@@ -59,7 +76,11 @@ struct camera_t *CAM_open(char *filename)
 		goto ERR;
 	}
 
-	//TODO: query available formats and set them
+	if (!CAM_IsFourCCSupported(cam, v4l2_fourcc('J', 'P', 'E', 'G'))){
+		WARN(EINVAL, "Error: Camera does not support JPEG format");
+		goto ERR;
+	}
+
 	struct v4l2_format format;
 	format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 	format.fmt.pix.pixelformat = V4L2_PIX_FMT_MJPEG;
