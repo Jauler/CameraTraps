@@ -94,7 +94,7 @@ static struct framesize_t CAM_GetHighesSupportedResolution(struct camera_t *cam)
 
 struct camera_t *CAM_open(struct config_t *cfg)
 {
-	char *filename = CFG_GetValue(cfg, "VideoDevice");
+	char *filename = CFG_GetValue(cfg, "video_device");
 	if (!filename)
 		ERR(-1, ENOENT, "Config Error: VideoDevice not specified");
 
