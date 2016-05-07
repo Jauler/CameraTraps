@@ -41,30 +41,23 @@ static int safe_ioctl(int fd, int request, void *arg)
 	return ret;
 }
 
-static int CAM_IsFourCCSupported(struct camera_t * cam, uint32_t fourcc)
-{
-	struct v4l2_fmtdesc fmtdesc;
-
-	fmtdesc.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-	fmtdesc.index = 0;
-	while (safe_ioctl(cam->fd, VIDIOC_ENUM_FMT, &fmtdesc) == 0){
-		if (fmtdesc.pixelformat == fourcc)
-			return 1;
-
-		fmtdesc.index++;
-	}
-
-	return 0;
-}
-
-static struct framesize_t CAM_GetHighesSupportedResolution(struct camera_t *cam)
+static struct framesize_t CAM_GetHighestSupportedResolution(struct camera_t *cam)
 {
 	struct framesize_t max_framesize = {0,0};
+
+	//Figure out pixelformat
+	struct v4l2_fmtdesc fmtdesc;
+	fmtdesc.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	fmtdesc.index = 0;
+	if (safe_ioctl(cam->fd, VIDIOC_ENUM_FMT, &fmtdesc) != 0){
+		WARN(errno, "Error: no native format found");
+		return max_framesize;
+	}
+
 	struct v4l2_frmsizeenum framesize;
 	framesize.index = 0;
-	framesize.pixel_format = v4l2_fourcc('J', 'P', 'E', 'G');
-
-	if (safe_ioctl(cam->fd, VIDIOC_ENUM_FRAMESIZES, &framesize) == -1){
+	framesize.pixel_format = fmtdesc.pixelformat;
+	if (safe_ioctl(cam->fd, VIDIOC_ENUM_FRAMESIZES, &framesize) != 0){
 		WARN(errno, "Error: Could not enumerate supported resolutions");
 		return max_framesize;
 	}
@@ -134,12 +127,7 @@ struct camera_t *CAM_open(struct config_t *cfg)
 		goto ERR;
 	}
 
-	if (!CAM_IsFourCCSupported(cam, v4l2_fourcc('J', 'P', 'E', 'G'))){
-		WARN(EINVAL, "Error: Camera does not support JPEG format");
-		goto ERR;
-	}
-
-	struct framesize_t framesize = CAM_GetHighesSupportedResolution(cam);
+	struct framesize_t framesize = CAM_GetHighestSupportedResolution(cam);
 	if (framesize.height * framesize.width <= 0){
 		WARN(EINVAL, "Error: Pixel resolution search failed");
 		goto ERR;
