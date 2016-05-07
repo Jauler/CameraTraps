@@ -24,11 +24,12 @@ static void write_file(char *filename, struct camera_buffer_t buff)
 
 int main(int argc, char *argv[])
 {
+	char *config_file = NULL;
+
 	if (argc < 2)
-	{
-		printf("Usage: %s <configuration file>\n", argv[0]);
-		exit(0);
-	}
+		config_file = "/etc/cameraTraps.conf";
+	else
+		config_file = argv[1];
 
 	struct config_t *cfg = CFG_ParseConfigFile(argv[1]);
 	if (!cfg)
