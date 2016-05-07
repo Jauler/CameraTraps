@@ -104,12 +104,8 @@ int main(int argc, char *argv[])
 		nanosleep(&ts, NULL);
 
 		isActive = SNR_IsActive(snr);
-		if (isActive && !old_isActive){
-			// rising edge
+		if (isActive && !old_isActive)
 			counter = 0;
-			time_t t = time(NULL);
-			strftime(date, sizeof(date), "%Y%m%d_%H%M", localtime(&t));
-		}
 		old_isActive = isActive;
 
 		if (!isActive)
@@ -117,13 +113,15 @@ int main(int argc, char *argv[])
 
 		counter++;
 
-		printf("Making photo\n");
-
 		buff = CAM_capture(cam);
+		if (buff.length <= 0)
+			continue;
 
-		snprintf(filename, sizeof(filename), "%s/%s_%d.jpeg", photo_dir, date, counter);
+		time_t t = time(NULL);
+		strftime(date, sizeof(date), "%Y%m%d_%H%M", localtime(&t));
+		snprintf(filename, sizeof(filename), "%s/%s_%d.ppm", photo_dir, date, counter);
+		printf("Making photo %s\n", filename);
 		write_file(filename, buff);
-	}
 
 		nanosleep(&long_ts, NULL);
 	}
