@@ -115,7 +115,7 @@ struct camera_t *CAM_open(struct config_t *cfg)
 		goto ERR;
 	}
 
-	if (safe_ioctl(cam->fd, VIDIOC_QUERYCAP, &cam->caps) == -1){
+	if (safe_ioctl(cam->fd, VIDIOC_QUERYCAP, &cam->caps) != 0){
 		WARN(EINVAL, "Error while reading camera capabilities");
 		goto ERR;
 	}
@@ -141,18 +141,18 @@ struct camera_t *CAM_open(struct config_t *cfg)
 	format.fmt.pix.pixelformat = V4L2_PIX_FMT_MJPEG;
 	format.fmt.pix.width = framesize.width;
 	format.fmt.pix.height = framesize.height;
-	if (safe_ioctl(cam->fd, VIDIOC_S_FMT, &format) == -1){
+	if (safe_ioctl(cam->fd, VIDIOC_S_FMT, &format) != 0){
 		WARN(EINVAL, "Error: Format set failed");
-		return NULL;
+		goto ERR;
 	}
 
 	struct v4l2_requestbuffers bufreq;
 	bufreq.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 	bufreq.memory = V4L2_MEMORY_MMAP;
 	bufreq.count = BUFFER_COUNT;
-	if (safe_ioctl(cam->fd, VIDIOC_REQBUFS, &bufreq) == -1){
+	if (safe_ioctl(cam->fd, VIDIOC_REQBUFS, &bufreq) != 0){
 		WARN(EINVAL, "Error: Buffer request failed");
-		return NULL;
+		goto ERR;
 	}
 
 	for (i = 0; i < BUFFER_COUNT; i++){
@@ -160,15 +160,15 @@ struct camera_t *CAM_open(struct config_t *cfg)
 		cam->buff[i].type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 		cam->buff[i].memory = V4L2_MEMORY_MMAP;
 		cam->buff[i].index = i;
-		if (safe_ioctl(cam->fd, VIDIOC_QUERYBUF, &cam->buff[i]) == -1){
+		if (safe_ioctl(cam->fd, VIDIOC_QUERYBUF, &cam->buff[i]) != 0){
 			WARN(EINVAL, "Error: Buffer query failed");
-			return NULL;
+			goto ERR;
 		}
 
 		cam->mmap[i] = v4l2_mmap(NULL, cam->buff[i].length, PROT_READ | PROT_WRITE, MAP_SHARED, cam->fd, cam->buff[i].m.offset);
 		if (cam->mmap[i] == MAP_FAILED){
 			WARN(EINVAL, "Error: memory mapping failed");
-			return NULL;
+			goto ERR;
 		}
 	}
 
@@ -182,20 +182,19 @@ ERR:
 void CAM_prepare(struct camera_t *cam)
 {
 	//spin single frame - some cameras require queued buffers before STREAMON
-	memset(cam->mmap[cam->current_buff_idx], 0, cam->buff[cam->current_buff_idx].length);
-	if (safe_ioctl(cam->fd, VIDIOC_QBUF, &cam->buff[cam->current_buff_idx]) == -1){
+	if (safe_ioctl(cam->fd, VIDIOC_QBUF, &cam->buff[cam->current_buff_idx]) != 0){
 		WARN(EINVAL, "Error: Buffer queue failed");
 		return;
 	}
 
 	int type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-	if (safe_ioctl(cam->fd, VIDIOC_STREAMON, &type) == -1){
+	if (safe_ioctl(cam->fd, VIDIOC_STREAMON, &type) != 0){
 		WARN(EINVAL, "Error: Stream start failed");
 		return;
 	}
 
-	if (safe_ioctl(cam->fd, VIDIOC_DQBUF, &cam->buff[cam->current_buff_idx]) == -1){
-		WARN(EINVAL, "Error: Buffer dequeue failed");
+	if (safe_ioctl(cam->fd, VIDIOC_DQBUF, &cam->buff[cam->current_buff_idx]) != 0){
+		WARN(EINVAL, "Error: Buffer queue failed");
 		return;
 	}
 
@@ -228,7 +227,7 @@ struct camera_buffer_t CAM_capture(struct camera_t *cam)
 void CAM_unprepare(struct camera_t *cam)
 {
 	int type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-	if (safe_ioctl(cam->fd, VIDIOC_STREAMOFF, &type) == -1){
+	if (safe_ioctl(cam->fd, VIDIOC_STREAMOFF, &type) != 0){
 		WARN(EINVAL, "Error: Stream stop failed");
 		return;
 	}
