@@ -18,13 +18,12 @@
 struct config_t *cfg = NULL;
 struct camera_t *cam = NULL;
 struct sensor_t *snr = NULL;
+int shouldExit = 0;
 
 static void signal_cleanup(int signum)
 {
-	if (signum != 0){
-		exit(EXIT_FAILURE);
-		return;
-	}
+	shouldExit = 1;
+	return;
 }
 
 static void atexit_cleanup(void)
@@ -34,8 +33,12 @@ static void atexit_cleanup(void)
 		CAM_destroy(cam);
 	}
 
-	SNR_destroy(snr);
-	CFG_destroy(cfg);
+	if (snr)
+		SNR_destroy(snr);
+
+	if (cfg)
+		CFG_destroy(cfg);
+
 	return;
 }
 
@@ -102,6 +105,9 @@ int main(int argc, char *argv[])
 	CAM_prepare(cam);
 	while (1){
 		nanosleep(&ts, NULL);
+
+		if (shouldExit)
+			break;
 
 		isActive = SNR_IsActive(snr);
 		if (isActive && !old_isActive)
