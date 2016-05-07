@@ -5,11 +5,37 @@
 #include <errno.h>
 #include <time.h>
 #include <string.h>
+#include <signal.h>
 
 #include "config.h"
 #include "v4l2_camera.h"
 #include "sensor.h"
 #include "errors.h"
+
+struct config_t *cfg = NULL;
+struct camera_t *cam = NULL;
+struct sensor_t *snr = NULL;
+
+
+static void signal_cleanup(int signum)
+{
+	if (signum != 0){
+		exit(EXIT_FAILURE);
+		return;
+	}
+}
+
+static void atexit_cleanup(void)
+{
+	if (cam){
+		CAM_unprepare(cam);
+		CAM_destroy(cam);
+	}
+
+	SNR_destroy(snr);
+	CFG_destroy(cfg);
+	return;
+}
 
 static void write_file(char *filename, struct camera_buffer_t buff)
 {
@@ -26,12 +52,15 @@ int main(int argc, char *argv[])
 {
 	char *config_file = NULL;
 
+	atexit(atexit_cleanup);
+	signal(SIGINT, signal_cleanup);
+
 	if (argc < 2)
 		config_file = "/etc/cameraTraps.conf";
 	else
 		config_file = argv[1];
 
-	struct config_t *cfg = CFG_ParseConfigFile(argv[1]);
+	cfg = CFG_ParseConfigFile(config_file);
 	if (!cfg)
 		exit(-1);
 	char *photo_dir = CFG_GetValue(cfg, "photo_dir");
@@ -40,10 +69,10 @@ int main(int argc, char *argv[])
 		exit(-1);
 	}
 
-	struct camera_t *cam = CAM_open(cfg);
+	cam = CAM_open(cfg);
 	if (!cam)
 		exit(-1);
-	struct sensor_t *snr = SNR_open(cfg);
+	snr = SNR_open(cfg);
 	if (!snr)
 		exit(-1);
 
@@ -83,8 +112,5 @@ int main(int argc, char *argv[])
 
 	CAM_unprepare(cam);
 
-	SNR_destroy(snr);
-	CAM_destroy(cam);
-	CFG_destroy(cfg);
 	return 0;
 }
