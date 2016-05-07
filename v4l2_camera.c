@@ -138,7 +138,8 @@ struct camera_t *CAM_open(struct config_t *cfg)
 
 	struct v4l2_format format;
 	format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-	format.fmt.pix.pixelformat = V4L2_PIX_FMT_MJPEG;
+	format.fmt.pix.pixelformat = V4L2_PIX_FMT_RGB24;
+	format.fmt.pix.field = V4L2_FIELD_ANY;
 	format.fmt.pix.width = framesize.width;
 	format.fmt.pix.height = framesize.height;
 	if (safe_ioctl(cam->fd, VIDIOC_S_FMT, &format) != 0){
@@ -198,8 +199,6 @@ void CAM_prepare(struct camera_t *cam)
 		return;
 	}
 
-	cam->current_buff_idx = (cam->current_buff_idx + 1) % BUFFER_COUNT;
-
 	return;
 }
 
@@ -208,19 +207,38 @@ struct camera_buffer_t CAM_capture(struct camera_t *cam)
 	struct camera_buffer_t buff = {NULL, 0};
 
 	cam->current_buff_idx = (cam->current_buff_idx + 1) % BUFFER_COUNT;
-	memset(cam->mmap[cam->current_buff_idx], 0, cam->buff[cam->current_buff_idx].length);
-	if (safe_ioctl(cam->fd, VIDIOC_QBUF, &cam->buff[cam->current_buff_idx]) == -1){
-		WARN(EINVAL, "Error: Buffer dequeue failed");
+
+	if (safe_ioctl(cam->fd, VIDIOC_QBUF, &cam->buff[cam->current_buff_idx]) < 0){
+		WARN(EINVAL, "Error: Buffer queue failed");
 		return buff;
 	}
 
-	if (safe_ioctl(cam->fd, VIDIOC_DQBUF, &cam->buff[cam->current_buff_idx]) == -1){
+	fd_set fds;
+	FD_ZERO(&fds);
+	FD_SET(cam->fd, &fds);
+	select(cam->fd+1, &fds, NULL, NULL, NULL);
+
+	memset(&cam->buff[cam->current_buff_idx], 0, sizeof(cam->buff[cam->current_buff_idx]));
+	cam->buff[cam->current_buff_idx].type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	cam->buff[cam->current_buff_idx].memory = V4L2_MEMORY_MMAP;
+	cam->buff[cam->current_buff_idx].index = cam->current_buff_idx;
+	if (safe_ioctl(cam->fd, VIDIOC_QUERYBUF, &cam->buff[cam->current_buff_idx]) < 0){
+		WARN(EINVAL, "Error: Buffer query failed");
+		return buff;
+	}
+
+	if (!(cam->buff[cam->current_buff_idx].flags & V4L2_BUF_FLAG_DONE))
+		return buff;
+	if (cam->buff[cam->current_buff_idx].flags & V4L2_BUF_FLAG_ERROR)
+		return buff;
+
+	if (safe_ioctl(cam->fd, VIDIOC_DQBUF, &cam->buff[cam->current_buff_idx]) < 0){
 		WARN(EINVAL, "Error: Buffer queue failed");
 		return buff;
 	}
 
 	buff.buffer = cam->mmap[cam->current_buff_idx];
-	buff.length = cam->buff[cam->current_buff_idx].length;
+	buff.length = cam->buff[cam->current_buff_idx].bytesused;
 	return buff;
 }
 
