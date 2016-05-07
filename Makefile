@@ -8,6 +8,7 @@ CFLAGS += -Wall
 CFLAGS += -Werror
 
 LDFLAGS += $(CFLAGS)
+LDFLAGS += -lv4l2 -lv4lconvert
 
 SRC += config.c
 SRC += v4l2_camera.c
@@ -24,7 +25,7 @@ all: binary
 	$(CC) $(CFLAGS) -c $< -o $@
 
 binary: $(OBJS)
-	$(CC) $(LDFLAGS) $(OBJS) -o $(NAME)
+	$(CC) $(OBJS) -o $(NAME) $(LDFLAGS)
 
 clean:
 	$(RM) -f $(NAME)

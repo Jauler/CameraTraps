@@ -10,6 +10,9 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
+#include <libv4l2.h>
+#include <libv4lconvert.h>
+
 #include "errors.h"
 #include "v4l2_camera.h"
 
@@ -35,7 +38,7 @@ static int safe_ioctl(int fd, int request, void *arg)
 	int ret;
 
 	do {
-		ret = ioctl(fd, request, arg);
+		ret = v4l2_ioctl(fd, request, arg);
 	} while (ret == -1 && errno == EINTR);
 
 	return ret;
@@ -105,8 +108,8 @@ struct camera_t *CAM_open(struct config_t *cfg)
 		goto ERR;
 	}
 
-	cam->fd = open(filename, O_RDWR);
-	if (cam->fd == -1)
+	cam->fd = v4l2_open(filename, O_RDWR);
+	if (cam->fd < 0)
 	{
 		WARN(errno, "Error while opening camera device");
 		goto ERR;
@@ -162,7 +165,7 @@ struct camera_t *CAM_open(struct config_t *cfg)
 			return NULL;
 		}
 
-		cam->mmap[i] = mmap(NULL, cam->buff[i].length, PROT_READ | PROT_WRITE, MAP_SHARED, cam->fd, cam->buff[i].m.offset);
+		cam->mmap[i] = v4l2_mmap(NULL, cam->buff[i].length, PROT_READ | PROT_WRITE, MAP_SHARED, cam->fd, cam->buff[i].m.offset);
 		if (cam->mmap[i] == MAP_FAILED){
 			WARN(EINVAL, "Error: memory mapping failed");
 			return NULL;
