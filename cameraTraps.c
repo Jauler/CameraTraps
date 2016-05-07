@@ -13,22 +13,13 @@
 
 static void write_file(char *filename, struct camera_buffer_t buff)
 {
-	int ret;
-	unsigned int count = 0;
-	int jpgfile = open(filename, O_WRONLY | O_CREAT, 0660);
-	if (jpgfile < 0)
+	FILE *f = fopen(filename, "w");
+	if (f == NULL)
 		ERR(-1, errno, "Error: Opening image file");
 
-	while (buff.length > count){
-		ret = write(jpgfile, buff.buffer + count, buff.length - count);
-		if (ret <= 0){
-			WARN(errno, "Error: File write failed");
-			return;
-		}
-
-		count += ret;
-	}
-	close(jpgfile);
+	fprintf(f, "P6\n%d %d 255\n", 640, 480);
+	fwrite(buff.buffer, buff.length, 1, f);
+	fclose(f);
 }
 
 int main(int argc, char *argv[])
