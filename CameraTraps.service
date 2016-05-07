@@ -1,0 +1,12 @@
+[Unit]
+Description=Make photos with PIR sensor
+After=syslog.target
+
+[Service]
+Type=simple
+PIDFile=/var/run/cameraTraps.pid
+ExecStart=/usr/bin/cameraTraps
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
