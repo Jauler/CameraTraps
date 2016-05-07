@@ -216,7 +216,8 @@ struct camera_buffer_t CAM_capture(struct camera_t *cam)
 	fd_set fds;
 	FD_ZERO(&fds);
 	FD_SET(cam->fd, &fds);
-	select(cam->fd+1, &fds, NULL, NULL, NULL);
+	if (select(cam->fd+1, &fds, NULL, NULL, NULL) <= 0)
+		return buff;
 
 	memset(&cam->buff[cam->current_buff_idx], 0, sizeof(cam->buff[cam->current_buff_idx]));
 	cam->buff[cam->current_buff_idx].type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
