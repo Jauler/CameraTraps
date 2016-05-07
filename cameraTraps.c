@@ -12,10 +12,12 @@
 #include "sensor.h"
 #include "errors.h"
 
+#define DEFAULT_PHOTO_DELAY			200
+#define DEFAULT_CONFIG_FILE			"/etc/cameraTraps.conf"
+
 struct config_t *cfg = NULL;
 struct camera_t *cam = NULL;
 struct sensor_t *snr = NULL;
-
 
 static void signal_cleanup(int signum)
 {
@@ -51,12 +53,13 @@ static void write_file(char *filename, struct camera_buffer_t buff)
 int main(int argc, char *argv[])
 {
 	char *config_file = NULL;
+	unsigned long long int delay;
 
 	atexit(atexit_cleanup);
 	signal(SIGINT, signal_cleanup);
 
 	if (argc < 2)
-		config_file = "/etc/cameraTraps.conf";
+		config_file = DEFAULT_CONFIG_FILE;
 	else
 		config_file = argv[1];
 
@@ -67,6 +70,17 @@ int main(int argc, char *argv[])
 	if (!photo_dir){
 		ERR_NOCFG("photo_dir");
 		exit(-1);
+	}
+
+	char *str_delay = NULL;
+	if ((str_delay = CFG_GetValue(cfg, "photo_delay")) != NULL){
+		unsigned long long int tmp_delay = atoi(str_delay);
+		if (tmp_delay < 100 || tmp_delay > 1000){
+			WARN(EINVAL, "Photo delay is either invalid or not in range [100, 1000]");
+			exit(EXIT_FAILURE);
+		}
+	} else {
+		delay = DEFAULT_PHOTO_DELAY;
 	}
 
 	cam = CAM_open(cfg);
@@ -81,6 +95,7 @@ int main(int argc, char *argv[])
 	char date[64];
 	struct camera_buffer_t buff;
 	struct timespec ts = {0, 100000000};
+	struct timespec long_ts = {delay / 1000, delay * 1000000 % 1000000000};
 	int isActive = 0, old_isActive = 0;
 	int counter = 0;
 
@@ -110,7 +125,8 @@ int main(int argc, char *argv[])
 		write_file(filename, buff);
 	}
 
-	CAM_unprepare(cam);
+		nanosleep(&long_ts, NULL);
+	}
 
 	return 0;
 }
