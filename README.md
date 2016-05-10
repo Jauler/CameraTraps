@@ -1,5 +1,7 @@
 # Camera traps for Citizen Science
 
+[hackaday project](https://hackaday.io/project/11088-camera-traps-for-citizen-science)
+
 ## Description
 
 Aiming to build cheap Camera Traps that could be easy enough to build and use for citizen science by Tanzanian schools. This is meant both as a wildlife protection and an education effort.
