@@ -31,6 +31,8 @@ struct sensor_t *SNR_open(struct config_t *cfg)
 		snr->IsActive = (int (*)(void *))GPIO_SNR_IsActive;
 		snr->destroy = (void (*)(void *))GPIO_SNR_destroy;
 		snr->instance = GPIO_SNR_open(cfg);
+		if (snr->instance == NULL)
+			goto FAILURE;
 		return snr;
 	}
 
