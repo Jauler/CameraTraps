@@ -9,6 +9,7 @@
 
 #include "config.h"
 #include "v4l2_camera.h"
+#include "image_writer.h"
 #include "sensor.h"
 #include "errors.h"
 
@@ -42,15 +43,16 @@ static void atexit_cleanup(void)
 	return;
 }
 
-static void write_file(char *filename, struct camera_buffer_t buff)
+static void write_file(char *filename, struct camera_buffer_t buff, struct config_t *cfg)
 {
-	FILE *f = fopen(filename, "w");
-	if (f == NULL)
-		ERR(-1, errno, "Error: Opening image file");
+	const struct image_t img = {
+		.width = 640,
+		.height = 480,
+		.data = buff.buffer,
+		.bits_per_pixel = 24
+	};
 
-	fprintf(f, "P6\n%d %d 255\n", 640, 480);
-	fwrite(buff.buffer, buff.length, 1, f);
-	fclose(f);
+	write_image(filename, &img, cfg);
 }
 
 int main(int argc, char *argv[])
@@ -125,9 +127,9 @@ int main(int argc, char *argv[])
 
 		time_t t = time(NULL);
 		strftime(date, sizeof(date), "%Y%m%d_%H%M", localtime(&t));
-		snprintf(filename, sizeof(filename), "%s/%s_%d.ppm", photo_dir, date, counter);
+		snprintf(filename, sizeof(filename), "%s/%s_%d.jpg", photo_dir, date, counter);
 		printf("Making photo %s\n", filename);
-		write_file(filename, buff);
+		write_file(filename, buff, cfg);
 
 		nanosleep(&long_ts, NULL);
 	}

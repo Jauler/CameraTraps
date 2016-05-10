@@ -8,10 +8,11 @@ CFLAGS += -Wall
 CFLAGS += -Werror
 
 LDFLAGS += $(CFLAGS)
-LDFLAGS += -lv4l2 -lv4lconvert
+LDFLAGS += -lv4l2 -lv4lconvert -ljpeg
 
 SRC += config.c
 SRC += v4l2_camera.c
+SRC += image_writer.c
 SRC += cameraTraps.c
 SRC += sensor.c
 SRC += gpio_sensor.c
