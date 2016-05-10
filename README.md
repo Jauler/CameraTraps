@@ -1,6 +1,5 @@
 # Camera traps for Citizen Science
 
-[hackaday project](https://hackaday.io/project/11088-camera-traps-for-citizen-science)
 
 ## Description
 
@@ -12,3 +11,9 @@ The concept relies on using a Raspberry Zero - it's functionality (particularly 
 
 Cheap DIY Camera Traps can become a universal tool that will upturn the current citizen science and educational practices in this area, as currently available Camera Traps are difficult to afford (cheapest being ~$100 per kit), which limits citizen science efforts greatly, especially in developing countries.
 We aim for ~$15-20
+
+
+## References
+
+[hackaday project](https://hackaday.io/project/11088-camera-traps-for-citizen-science)
+[Technarium blog entry](http://blog.technariumas.lt/post/143423509856/prototyping-camera-traps)
