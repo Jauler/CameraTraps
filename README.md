@@ -15,5 +15,5 @@ We aim for ~$15-20
 
 ## References
 
-[hackaday project](https://hackaday.io/project/11088-camera-traps-for-citizen-science)
-[Technarium blog entry](http://blog.technariumas.lt/post/143423509856/prototyping-camera-traps)
+* [hackaday project](https://hackaday.io/project/11088-camera-traps-for-citizen-science)
+* [Technarium blog entry](http://blog.technariumas.lt/post/143423509856/prototyping-camera-traps)
