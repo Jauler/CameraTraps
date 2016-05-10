@@ -14,6 +14,8 @@ SRC += config.c
 SRC += v4l2_camera.c
 SRC += cameraTraps.c
 SRC += sensor.c
+SRC += gpio_sensor.c
+SRC += always_on_sensor.c
 
 OBJS = $(patsubst %.c, %.o, $(SRC))
 
