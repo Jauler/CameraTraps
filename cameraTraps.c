@@ -79,14 +79,16 @@ int main(int argc, char *argv[])
 
 	char *str_delay = NULL;
 	if ((str_delay = CFG_GetValue(cfg, "photo_delay")) != NULL){
-		unsigned long long int tmp_delay = atoi(str_delay);
-		if (tmp_delay < 100 || tmp_delay > 1000){
-			WARN(EINVAL, "Photo delay is either invalid or not in range [100, 1000]");
-			exit(EXIT_FAILURE);
-		}
+		delay = atoi(str_delay);
 	} else {
 		delay = DEFAULT_PHOTO_DELAY;
 	}
+
+	if (delay < 10 || delay > 1000){
+		WARN(EINVAL, "Photo delay is either invalid or not in range [100, 1000]");
+		exit(EXIT_FAILURE);
+	}
+
 
 	cam = CAM_open(cfg);
 	if (!cam)
