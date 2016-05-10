@@ -14,7 +14,7 @@ We aim for ~$15-20
 
 ## Package dependencies
 
-These packages are required for successfull building:
+These packages are required for successful compilation:
 
 * libv4l2-dev
 * libjpeg-dev
