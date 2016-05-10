@@ -12,6 +12,12 @@ The concept relies on using a Raspberry Zero - it's functionality (particularly 
 Cheap DIY Camera Traps can become a universal tool that will upturn the current citizen science and educational practices in this area, as currently available Camera Traps are difficult to afford (cheapest being ~$100 per kit), which limits citizen science efforts greatly, especially in developing countries.
 We aim for ~$15-20
 
+## Package dependencies
+
+These packages are required for successfull building:
+
+* libv4l2-dev
+* libjpeg-dev
 
 ## References
 
