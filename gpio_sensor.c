@@ -22,13 +22,13 @@ struct sensor_t *GPIO_SNR_open(struct config_t *cfg)
 	struct sensor_t *snr = calloc(1, sizeof(struct sensor_t));
 
 	char *str_active = CFG_GetValue(cfg, "active");
-	if (!str_active){
+	if (!str_active) {
 		ERR_NOCFG("active");
 		goto ERR;
 	}
-	if (strcmp(str_active, "high") == 0){
+	if (strcmp(str_active, "high") == 0) {
 		snr->reverse = 0;
-	} else if (strcmp(str_active, "low") == 0){
+	} else if (strcmp(str_active, "low") == 0) {
 		snr->reverse = 1;
 	} else {
 		WARN(EINVAL, "Config Error: \"active\" should be either \"high\" or \"low\"");
@@ -36,13 +36,13 @@ struct sensor_t *GPIO_SNR_open(struct config_t *cfg)
 	}
 
 	snr->value_file = CFG_GetValue(cfg, "value_file");
-	if (!snr->value_file){
+	if (!snr->value_file) {
 		ERR_NOCFG("value_file");
 		goto ERR;
 	}
 
 	snr->str_gpio_num = CFG_GetValue(cfg, "gpio_num");
-	if (!snr->str_gpio_num){
+	if (!snr->str_gpio_num) {
 		ERR_NOCFG("gpio_num");
 		goto ERR;
 	}
@@ -50,15 +50,15 @@ struct sensor_t *GPIO_SNR_open(struct config_t *cfg)
 
 	//check if we need to export
 	char *export_file = CFG_GetValue(cfg, "export_file");
-	if (export_file){
+	if (export_file) {
 		int export_fd = open(export_file, O_WRONLY);
-		if (export_fd < 0){
+		if (export_fd < 0) {
 			WARN(errno, "Error exporting");
 			goto ERR;
 		}
 
 		int ret = write(export_fd, snr->str_gpio_num, strlen(snr->str_gpio_num));
-		if (ret <= 0 && errno != EBUSY){
+		if (ret <= 0 && errno != EBUSY) {
 			WARN(errno, "Error exporting");
 			goto ERR;
 		}
@@ -67,14 +67,14 @@ struct sensor_t *GPIO_SNR_open(struct config_t *cfg)
 	}
 
 	char *direction_file = CFG_GetValue(cfg, "direction_file");
-	if (direction_file){
+	if (direction_file) {
 		int direction_fd = open(direction_file, O_WRONLY);
-		if (direction_fd < 0){
+		if (direction_fd < 0) {
 			WARN(errno, "Error setting direction");
 			goto ERR;
 		}
 
-		if (write(direction_fd, "in", 2) <= 0){
+		if (write(direction_fd, "in", 2) <= 0) {
 			WARN(errno, "Error setting direction");
 			goto ERR;
 		}
@@ -83,7 +83,7 @@ struct sensor_t *GPIO_SNR_open(struct config_t *cfg)
 	}
 
 	snr->fd = open(snr->value_file, O_RDONLY);
-	if (snr->fd < 0){
+	if (snr->fd < 0) {
 		WARN(errno, "Error gpio open failed");
 		goto ERR;
 	}

@@ -29,7 +29,7 @@ static void signal_cleanup(int signum)
 
 static void atexit_cleanup(void)
 {
-	if (cam){
+	if (cam) {
 		CAM_unprepare(cam);
 		CAM_destroy(cam);
 	}
@@ -73,19 +73,19 @@ int main(int argc, char *argv[])
 	if (!cfg)
 		exit(-1);
 	char *photo_dir = CFG_GetValue(cfg, "photo_dir");
-	if (!photo_dir){
+	if (!photo_dir) {
 		ERR_NOCFG("photo_dir");
 		exit(-1);
 	}
 
 	char *str_delay = NULL;
-	if ((str_delay = CFG_GetValue(cfg, "photo_delay")) != NULL){
+	if ((str_delay = CFG_GetValue(cfg, "photo_delay")) != NULL) {
 		delay = atoi(str_delay);
 	} else {
 		delay = DEFAULT_PHOTO_DELAY;
 	}
 
-	if (delay < 10 || delay > 1000){
+	if (delay < 10 || delay > 1000) {
 		WARN(EINVAL, "Photo delay is either invalid or not in range [100, 1000]");
 		exit(EXIT_FAILURE);
 	}
@@ -108,7 +108,7 @@ int main(int argc, char *argv[])
 	int counter = 0;
 
 	CAM_prepare(cam);
-	while (1){
+	while (1) {
 		nanosleep(&ts, NULL);
 
 		if (shouldExit)

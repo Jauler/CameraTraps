@@ -38,7 +38,7 @@ static char *CFG_trimTrailingWhitespace(char *str)
 
 	tmp = str + strlen(str) - 1;
 
-	while (isspace(*tmp) && tmp >= str){
+	while (isspace(*tmp) && tmp >= str) {
 		*tmp = 0;
 		tmp--;
 	}
@@ -63,7 +63,7 @@ struct config_t *CFG_ParseConfigFile(char *filename)
 	struct config_t *last_cfg = &head_cfg;
 
 	f = fopen(filename, "r");
-	if (!f){
+	if (!f) {
 		WARN(errno, "Error reading config file");
 		return NULL;
 	}
@@ -74,8 +74,7 @@ struct config_t *CFG_ParseConfigFile(char *filename)
 	size_t len = 0;
 	int line_count = 0;
 
-	while (getline(&line, &len, f) != -1)
-	{
+	while (getline(&line, &len, f) != -1) {
 		line_count++;
 
 		// Allow for comments
@@ -107,7 +106,7 @@ struct config_t *CFG_ParseConfigFile(char *filename)
 		struct config_t *cfg = NULL;
 		last_cfg->next = malloc(sizeof(struct config_t));
 		cfg = last_cfg->next;
-		if (!cfg){
+		if (!cfg) {
 			WARN(ENOMEM, "Error while parsing config file: %s\n", strerror(ENOMEM));
 			CFG_destroy(head_cfg.next);
 			return NULL;
@@ -155,8 +154,7 @@ void CFG_destroy(struct config_t *cfg)
 {
 	struct config_t *tmp;
 
-	while (cfg != NULL)
-	{
+	while (cfg != NULL) {
 		tmp = cfg->next;
 		free(cfg->line);
 		free(cfg);

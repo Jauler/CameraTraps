@@ -13,7 +13,7 @@
 
 int writer_to_libjpeg_format(enum format_e fmt)
 {
-	switch(fmt){
+	switch(fmt) {
 	case IMG_WR_FMT_RGB:
 		return JCS_RGB;
 	case IMG_WR_FMT_YUV:
@@ -45,7 +45,7 @@ int write_image(const char *filename, const struct image_t *img, struct config_t
 	jpeg_create_compress(&cinfo);
 
 	FILE *out = fopen(filename, "wb");
-	if (out == NULL){
+	if (out == NULL) {
 		WARN(errno, "Could not open output file");
 		return -errno;
 	}
@@ -62,7 +62,7 @@ int write_image(const char *filename, const struct image_t *img, struct config_t
 	jpeg_start_compress(&cinfo, TRUE);
 
 	JSAMPROW scanline[1] = {(JSAMPROW)img->data};
-	while (cinfo.next_scanline < cinfo.image_height){
+	while (cinfo.next_scanline < cinfo.image_height) {
 		jpeg_write_scanlines(&cinfo, scanline, 1);
 		scanline[0] = (JSAMPROW)img->data + cinfo.next_scanline * img->width * img->num_pixel_components;
 	}

@@ -52,7 +52,7 @@ static struct framesize_t CAM_GetHighestSupportedResolution(struct camera_t *cam
 	struct v4l2_fmtdesc fmtdesc;
 	fmtdesc.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 	fmtdesc.index = 0;
-	if (safe_ioctl(cam->fd, VIDIOC_ENUM_FMT, &fmtdesc) != 0){
+	if (safe_ioctl(cam->fd, VIDIOC_ENUM_FMT, &fmtdesc) != 0) {
 		WARN(errno, "Error: no native format found");
 		return max_framesize;
 	}
@@ -60,18 +60,17 @@ static struct framesize_t CAM_GetHighestSupportedResolution(struct camera_t *cam
 	struct v4l2_frmsizeenum framesize;
 	framesize.index = 0;
 	framesize.pixel_format = fmtdesc.pixelformat;
-	if (safe_ioctl(cam->fd, VIDIOC_ENUM_FRAMESIZES, &framesize) != 0){
+	if (safe_ioctl(cam->fd, VIDIOC_ENUM_FRAMESIZES, &framesize) != 0) {
 		WARN(errno, "Error: Could not enumerate supported resolutions");
 		return max_framesize;
 	}
 
-	switch(framesize.type){
+	switch(framesize.type) {
 
 	case V4L2_FRMSIZE_TYPE_DISCRETE:
 		do {
 			if (framesize.discrete.width * framesize.discrete.height >
-						max_framesize.width * max_framesize.height)
-			{
+						max_framesize.width * max_framesize.height) {
 				max_framesize.width = framesize.discrete.width;
 				max_framesize.height = framesize.discrete.height;
 			}
@@ -97,41 +96,40 @@ struct camera_t *CAM_open(struct config_t *cfg)
 	struct camera_t *cam = NULL;
 
 	char *filename = CFG_GetValue(cfg, "video_device");
-	if (!filename){
+	if (!filename) {
 		ERR_NOCFG("video_device");
 		goto ERR;
 	}
 
 	cam = calloc(1, sizeof(struct camera_t));
-	if (!cam){
+	if (!cam) {
 		WARN(ENOMEM, "Error while creating camera");
 		goto ERR;
 	}
 
 	cam->fd = v4l2_open(filename, O_RDWR);
-	if (cam->fd < 0)
-	{
+	if (cam->fd < 0) {
 		WARN(errno, "Error while opening camera device");
 		goto ERR;
 	}
 
-	if (safe_ioctl(cam->fd, VIDIOC_QUERYCAP, &cam->caps) != 0){
+	if (safe_ioctl(cam->fd, VIDIOC_QUERYCAP, &cam->caps) != 0) {
 		WARN(EINVAL, "Error while reading camera capabilities");
 		goto ERR;
 	}
 
-	if (!(cam->caps.capabilities & V4L2_CAP_VIDEO_CAPTURE)){
+	if (!(cam->caps.capabilities & V4L2_CAP_VIDEO_CAPTURE)) {
 		WARN(EINVAL, "Error: device is incapabale of single-planar capture");
 		goto ERR;
 	}
 
-	if (!(cam->caps.capabilities & V4L2_CAP_STREAMING)){
+	if (!(cam->caps.capabilities & V4L2_CAP_STREAMING)) {
 		WARN(EINVAL, "Error: device is incapable of streaming");
 		goto ERR;
 	}
 
 	struct framesize_t framesize = CAM_GetHighestSupportedResolution(cam);
-	if (framesize.height * framesize.width <= 0){
+	if (framesize.height * framesize.width <= 0) {
 		WARN(EINVAL, "Error: Pixel resolution search failed");
 		goto ERR;
 	}
@@ -142,7 +140,7 @@ struct camera_t *CAM_open(struct config_t *cfg)
 	format.fmt.pix.field = V4L2_FIELD_ANY;
 	format.fmt.pix.width = framesize.width;
 	format.fmt.pix.height = framesize.height;
-	if (safe_ioctl(cam->fd, VIDIOC_S_FMT, &format) != 0){
+	if (safe_ioctl(cam->fd, VIDIOC_S_FMT, &format) != 0) {
 		WARN(EINVAL, "Error: Format set failed");
 		goto ERR;
 	}
@@ -151,23 +149,23 @@ struct camera_t *CAM_open(struct config_t *cfg)
 	bufreq.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 	bufreq.memory = V4L2_MEMORY_MMAP;
 	bufreq.count = BUFFER_COUNT;
-	if (safe_ioctl(cam->fd, VIDIOC_REQBUFS, &bufreq) != 0){
+	if (safe_ioctl(cam->fd, VIDIOC_REQBUFS, &bufreq) != 0) {
 		WARN(EINVAL, "Error: Buffer request failed");
 		goto ERR;
 	}
 
-	for (i = 0; i < BUFFER_COUNT; i++){
+	for (i = 0; i < BUFFER_COUNT; i++) {
 		memset(&cam->buff[i], 0, sizeof(cam->buff[i]));
 		cam->buff[i].type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 		cam->buff[i].memory = V4L2_MEMORY_MMAP;
 		cam->buff[i].index = i;
-		if (safe_ioctl(cam->fd, VIDIOC_QUERYBUF, &cam->buff[i]) != 0){
+		if (safe_ioctl(cam->fd, VIDIOC_QUERYBUF, &cam->buff[i]) != 0) {
 			WARN(EINVAL, "Error: Buffer query failed");
 			goto ERR;
 		}
 
 		cam->mmap[i] = v4l2_mmap(NULL, cam->buff[i].length, PROT_READ | PROT_WRITE, MAP_SHARED, cam->fd, cam->buff[i].m.offset);
-		if (cam->mmap[i] == MAP_FAILED){
+		if (cam->mmap[i] == MAP_FAILED) {
 			WARN(EINVAL, "Error: memory mapping failed");
 			goto ERR;
 		}
@@ -183,18 +181,18 @@ ERR:
 void CAM_prepare(struct camera_t *cam)
 {
 	//spin single frame - some cameras require queued buffers before STREAMON
-	if (safe_ioctl(cam->fd, VIDIOC_QBUF, &cam->buff[cam->current_buff_idx]) != 0){
+	if (safe_ioctl(cam->fd, VIDIOC_QBUF, &cam->buff[cam->current_buff_idx]) != 0) {
 		WARN(EINVAL, "Error: Buffer queue failed");
 		return;
 	}
 
 	int type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-	if (safe_ioctl(cam->fd, VIDIOC_STREAMON, &type) != 0){
+	if (safe_ioctl(cam->fd, VIDIOC_STREAMON, &type) != 0) {
 		WARN(EINVAL, "Error: Stream start failed");
 		return;
 	}
 
-	if (safe_ioctl(cam->fd, VIDIOC_DQBUF, &cam->buff[cam->current_buff_idx]) != 0){
+	if (safe_ioctl(cam->fd, VIDIOC_DQBUF, &cam->buff[cam->current_buff_idx]) != 0) {
 		WARN(EINVAL, "Error: Buffer queue failed");
 		return;
 	}
@@ -208,7 +206,7 @@ struct camera_buffer_t CAM_capture(struct camera_t *cam)
 
 	cam->current_buff_idx = (cam->current_buff_idx + 1) % BUFFER_COUNT;
 
-	if (safe_ioctl(cam->fd, VIDIOC_QBUF, &cam->buff[cam->current_buff_idx]) < 0){
+	if (safe_ioctl(cam->fd, VIDIOC_QBUF, &cam->buff[cam->current_buff_idx]) < 0) {
 		WARN(EINVAL, "Error: Buffer queue failed");
 		return buff;
 	}
@@ -223,7 +221,7 @@ struct camera_buffer_t CAM_capture(struct camera_t *cam)
 	cam->buff[cam->current_buff_idx].type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 	cam->buff[cam->current_buff_idx].memory = V4L2_MEMORY_MMAP;
 	cam->buff[cam->current_buff_idx].index = cam->current_buff_idx;
-	if (safe_ioctl(cam->fd, VIDIOC_QUERYBUF, &cam->buff[cam->current_buff_idx]) < 0){
+	if (safe_ioctl(cam->fd, VIDIOC_QUERYBUF, &cam->buff[cam->current_buff_idx]) < 0) {
 		WARN(EINVAL, "Error: Buffer query failed");
 		return buff;
 	}
@@ -233,7 +231,7 @@ struct camera_buffer_t CAM_capture(struct camera_t *cam)
 	if (cam->buff[cam->current_buff_idx].flags & V4L2_BUF_FLAG_ERROR)
 		return buff;
 
-	if (safe_ioctl(cam->fd, VIDIOC_DQBUF, &cam->buff[cam->current_buff_idx]) < 0){
+	if (safe_ioctl(cam->fd, VIDIOC_DQBUF, &cam->buff[cam->current_buff_idx]) < 0) {
 		WARN(EINVAL, "Error: Buffer queue failed");
 		return buff;
 	}
@@ -246,7 +244,7 @@ struct camera_buffer_t CAM_capture(struct camera_t *cam)
 void CAM_unprepare(struct camera_t *cam)
 {
 	int type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-	if (safe_ioctl(cam->fd, VIDIOC_STREAMOFF, &type) != 0){
+	if (safe_ioctl(cam->fd, VIDIOC_STREAMOFF, &type) != 0) {
 		WARN(EINVAL, "Error: Stream stop failed");
 		return;
 	}
