@@ -48,8 +48,9 @@ static void write_file(char *filename, struct camera_buffer_t buff, struct confi
 	const struct image_t img = {
 		.width = 640,
 		.height = 480,
+		.num_pixel_components = 3,
+		.format = IMG_WR_FMT_RGB,
 		.data = buff.buffer,
-		.bits_per_pixel = 24
 	};
 
 	write_image(filename, &img, cfg);

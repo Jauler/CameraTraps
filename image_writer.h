@@ -3,11 +3,17 @@
 
 #include "config.h"
 
+enum format_e {
+	IMG_WR_FMT_GRAYSCALE,
+	IMG_WR_FMT_RGB,
+	IMG_WR_FMT_YUV
+};
+
 struct image_t {
 	int width;
 	int height;
-	int format;
-	int bits_per_pixel;
+	int num_pixel_components;
+	enum format_e format;
 	const void *data;
 };
 

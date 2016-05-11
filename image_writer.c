@@ -11,6 +11,21 @@
 
 #define DEFAULT_QUALITY 85
 
+int writer_to_libjpeg_format(enum format_e fmt)
+{
+	switch(fmt){
+	case IMG_WR_FMT_RGB:
+		return JCS_RGB;
+	case IMG_WR_FMT_YUV:
+		return JCS_YCbCr;
+	case IMG_WR_FMT_GRAYSCALE:
+		return JCS_GRAYSCALE;
+
+	default:
+		return JCS_UNKNOWN;
+	}
+}
+
 int write_image(const char *filename, const struct image_t *img, struct config_t *cfg)
 {
 	struct jpeg_compress_struct cinfo;
@@ -38,8 +53,8 @@ int write_image(const char *filename, const struct image_t *img, struct config_t
 
 	cinfo.image_width = img->width;
 	cinfo.image_height = img->height;
-	cinfo.input_components = 3; //TODO: do not use hardcoded constants here
-	cinfo.in_color_space = JCS_RGB;
+	cinfo.input_components = img->num_pixel_components;
+	cinfo.in_color_space = writer_to_libjpeg_format(img->format);
 
 	jpeg_set_defaults(&cinfo);
 	jpeg_set_quality(&cinfo, quality, TRUE);
@@ -49,7 +64,7 @@ int write_image(const char *filename, const struct image_t *img, struct config_t
 	JSAMPROW scanline[1] = {(JSAMPROW)img->data};
 	while (cinfo.next_scanline < cinfo.image_height){
 		jpeg_write_scanlines(&cinfo, scanline, 1);
-		scanline[0] = (JSAMPROW)img->data + cinfo.next_scanline * img->width * img->bits_per_pixel / 8;
+		scanline[0] = (JSAMPROW)img->data + cinfo.next_scanline * img->width * img->num_pixel_components;
 	}
 
 	jpeg_finish_compress(&cinfo);
